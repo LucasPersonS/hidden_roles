@@ -27,7 +27,6 @@ const App: React.FC = () => {
   const [roomCode, setRoomCode] = useState<string | null>(null); // Store the display code
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const [copied, setCopied] = useState(false);
-  const [lastEmergencyTime, setLastEmergencyTime] = useState<number>(0);
   const [cooldownMessage, setCooldownMessage] = useState<string | null>(null);
 
   // Audio compatibility for mobile (unlocks on first interaction)
@@ -97,7 +96,8 @@ const App: React.FC = () => {
         players: [],
         status: GameStatus.LOBBY,
         matchId: code,
-        isEmergency: false
+        isEmergency: false,
+        lastEmergencyTime: 0
       };
       setGameState(newState);
       setView('admin');
@@ -290,10 +290,11 @@ const App: React.FC = () => {
   const triggerEmergency = useCallback(() => {
     const now = Date.now();
     const cooldownMs = 150000; // 150 seconds
+    const lastTime = gameState?.lastEmergencyTime || 0;
 
     // Check cooldown
-    if (now - lastEmergencyTime < cooldownMs) {
-      const remainingSeconds = Math.ceil((cooldownMs - (now - lastEmergencyTime)) / 1000);
+    if (now - lastTime < cooldownMs) {
+      const remainingSeconds = Math.ceil((cooldownMs - (now - lastTime)) / 1000);
       setCooldownMessage(`Aguarde ${remainingSeconds}s antes de disparar outra emergência.`);
       setTimeout(() => setCooldownMessage(null), 3000);
       return;
@@ -301,14 +302,13 @@ const App: React.FC = () => {
 
     // Trigger emergency IMMEDIATELY with static message
     const emergencyMsg = "REUNIÃO DE EMERGÊNCIA! Todos para a sala principal!";
-    updateGame(prev => prev ? ({ ...prev, isEmergency: true, emergencyMessage: emergencyMsg }) : null);
-    setLastEmergencyTime(now);
+    updateGame(prev => prev ? ({ ...prev, isEmergency: true, emergencyMessage: emergencyMsg, lastEmergencyTime: now }) : null);
 
     // Auto-dismiss after 8 seconds
     setTimeout(() => {
       updateGame(prev => prev && prev.isEmergency ? ({ ...prev, isEmergency: false }) : prev);
     }, 8000);
-  }, [lastEmergencyTime, updateGame]);
+  }, [gameState?.lastEmergencyTime, updateGame]);
 
   // Update ref whenever function changes
   useEffect(() => {
@@ -320,10 +320,11 @@ const App: React.FC = () => {
   const requestEmergency = () => {
     const now = Date.now();
     const cooldownMs = 150000;
+    const lastTime = gameState?.lastEmergencyTime || 0;
 
     // Check cooldown on client side too
-    if (now - lastEmergencyTime < cooldownMs) {
-      const remainingSeconds = Math.ceil((cooldownMs - (now - lastEmergencyTime)) / 1000);
+    if (now - lastTime < cooldownMs) {
+      const remainingSeconds = Math.ceil((cooldownMs - (now - lastTime)) / 1000);
       setCooldownMessage(`Aguarde ${remainingSeconds}s antes de disparar outra emergência.`);
       setTimeout(() => setCooldownMessage(null), 3000);
       return;
