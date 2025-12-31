@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Player, Role, GameStatus } from '../types';
 
@@ -10,6 +9,8 @@ interface PlayerViewProps {
   isEmergency: boolean;
   emergencyMessage?: string;
   onClearEmergency?: () => void;
+  onTriggerEmergency?: () => void;
+  onUnlockAudio?: () => void;
 }
 
 const PlayerView: React.FC<PlayerViewProps> = ({
@@ -17,7 +18,9 @@ const PlayerView: React.FC<PlayerViewProps> = ({
   gameStatus,
   isEmergency,
   emergencyMessage,
-  onClearEmergency
+  onClearEmergency,
+  onTriggerEmergency,
+  onUnlockAudio
 }) => {
   const [localPlayerId, setLocalPlayerId] = useState<string | null>(localStorage.getItem(IDENTITY_KEY));
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
@@ -27,19 +30,23 @@ const PlayerView: React.FC<PlayerViewProps> = ({
   useEffect(() => {
     if (isEmergency) {
       const timer = setTimeout(() => setShowOverlay(true), 800);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+      };
     } else {
       setShowOverlay(false);
     }
   }, [isEmergency]);
 
   const handleClaimIdentity = (id: string) => {
+    if (onUnlockAudio) onUnlockAudio();
     localStorage.setItem(IDENTITY_KEY, id);
     setLocalPlayerId(id);
   };
 
   const handleSwitchIdentity = () => {
     if (confirm("Deseja trocar de identidade? Isso permitirá que você assuma outro codinome.")) {
+      if (onUnlockAudio) onUnlockAudio();
       localStorage.removeItem(IDENTITY_KEY);
       setLocalPlayerId(null);
     }
@@ -47,8 +54,14 @@ const PlayerView: React.FC<PlayerViewProps> = ({
 
   const handleReveal = (player: Player) => {
     if (player.id !== localPlayerId) return;
+    if (onUnlockAudio) onUnlockAudio();
     setSelectedPlayer(player);
     setIsRevealing(true);
+  };
+
+  const handleTriggerEmergencyWithSound = () => {
+    if (onUnlockAudio) onUnlockAudio();
+    if (onTriggerEmergency) onTriggerEmergency();
   };
 
   const closeReveal = () => {
@@ -155,6 +168,17 @@ const PlayerView: React.FC<PlayerViewProps> = ({
           </button>
         )}
 
+        {/* Botão de Emergência para Jogadores */}
+        <button
+          onClick={handleTriggerEmergencyWithSound}
+          className="w-full py-5 rounded-2xl bg-gradient-to-r from-red-600 to-rose-700 text-white font-display font-black text-lg shadow-xl shadow-red-900/40 active:scale-95 transition-all flex items-center justify-center gap-3 border border-white/10"
+        >
+          <svg className="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          SINAL DE EMERGÊNCIA
+        </button>
+
         <div className="pt-6 space-y-3">
           <p className="text-[10px] text-stone-600 font-black uppercase tracking-[0.3em]">Outros Agentes na Missão</p>
           <div className="grid grid-cols-2 gap-2">
@@ -172,7 +196,7 @@ const PlayerView: React.FC<PlayerViewProps> = ({
       {isRevealing && selectedPlayer && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-stone-950/98 backdrop-blur-3xl animate-in fade-in duration-300">
           <div className={`w-full max-w-sm rounded-[3rem] p-10 text-center space-y-10 border shadow-2xl relative ${selectedPlayer.role === Role.IMPOSTOR ? 'impostor-gradient pulse-red border-rose-500/50' :
-              selectedPlayer.role === Role.DETECTIVE ? 'detective-gradient border-blue-500/50' : 'innocent-gradient border-emerald-500/50'
+            selectedPlayer.role === Role.DETECTIVE ? 'detective-gradient border-blue-500/50' : 'innocent-gradient border-emerald-500/50'
             }`}>
             <div className="space-y-2">
               <h3 className="text-[10px] uppercase font-black tracking-[0.5em] text-white/50">Terminal Autorizado</h3>

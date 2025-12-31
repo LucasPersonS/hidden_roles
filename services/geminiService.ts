@@ -15,7 +15,7 @@ export const generateMissions = async (players: { name: string, role: Role }[]):
     players.forEach(p => {
       if (p.role === Role.IMPOSTOR) fallbacks[p.name] = "Infiltre-se e não seja pego.";
       else if (p.role === Role.DETECTIVE) fallbacks[p.name] = "Observe todos de perto.";
-      else fallbacks[p.name] = "Complete suas tarefas silenciosamente.";
+      else fallbacks[p.name] = "Encontre os papéis escondidos pela casa.";
     });
     return fallbacks;
   }
@@ -27,7 +27,7 @@ export const generateMissions = async (players: { name: string, role: Role }[]):
     Diretrizes:
     - IMPOSTOR: Missões devem envolver sabotagem sutil ou manipulação (ex: "Faça duas pessoas discutirem sobre a cor da sala").
     - DETETIVE: Missões devem ser investigativas (ex: "Descubra quem foi a última pessoa a comer").
-    - INOCENTE: Missões devem ser mundanas, mas suspeitas se flagradas (ex: "Toque no encosto de três cadeiras diferentes sem dizer o porquê").
+    - INOCENTE: "Encontre os papéis escondidos pela casa".
     
     Retorne um objeto JSON onde a chave é o nome do jogador e o valor é sua missão curta (máximo 12 palavras).
     A RESPOSTA DEVE SER EM PORTUGUÊS.
@@ -53,7 +53,7 @@ export const generateMissions = async (players: { name: string, role: Role }[]):
     players.forEach(p => {
       if (p.role === Role.IMPOSTOR) fallbacks[p.name] = "Infiltre-se e não seja pego.";
       else if (p.role === Role.DETECTIVE) fallbacks[p.name] = "Observe todos de perto.";
-      else fallbacks[p.name] = "Complete suas tarefas silenciosamente.";
+      else fallbacks[p.name] = "Encontre os papéis escondidos pela casa.";
     });
     return fallbacks;
   }

@@ -14,6 +14,7 @@ interface AdminPanelProps {
   onReset: () => void;
   onEmergency: () => void;
   onShare: () => void;
+  onUnlockAudio?: () => void;
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({
@@ -26,7 +27,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   onEndGame,
   onReset,
   onEmergency,
-  onShare
+  onShare,
+  onUnlockAudio
 }) => {
   const [newName, setNewName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -40,6 +42,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   const handleStart = async () => {
+    if (onUnlockAudio) onUnlockAudio();
     if (players.length < 3) {
       alert("Operação negada: Mínimo de 3 agentes necessários.");
       return;
@@ -145,7 +148,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       {status === GameStatus.ACTIVE && (
         <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
           <button
-            onClick={onEmergency}
+            onClick={() => { if (onUnlockAudio) onUnlockAudio(); onEmergency(); }}
             className="w-full py-6 rounded-2xl bg-gradient-to-br from-rose-600 to-red-800 font-display font-black text-xl shadow-2xl shadow-rose-900/50 border border-white/10 active:scale-95 pulse-red"
           >
             SINAL DE EMERGÊNCIA

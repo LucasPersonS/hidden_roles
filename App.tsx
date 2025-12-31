@@ -4,12 +4,16 @@ import { Player, Role, GameStatus, GameState } from './types';
 import AdminPanel from './components/AdminPanel';
 import PlayerView from './components/PlayerView';
 import JoinScreen from './components/JoinScreen';
-import { generateEmergencyMessage } from './services/geminiService';
+import { generateMissions, generateEmergencyMessage } from './services/geminiService';
 import Peer, { DataConnection } from 'peerjs';
+import alertSound from './assets/alert.mp3';
 
 const LOCAL_STORAGE_KEY = 'hidden_roles_v5_p2p';
-
 const APP_PREFIX = 'jdi25-';
+
+const audio = new Audio(alertSound);
+audio.loop = true;
+
 const generateShortCode = () => Math.random().toString(36).substring(2, 7).toUpperCase();
 
 // Helper to get random ID for players
@@ -24,6 +28,14 @@ const App: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const [copied, setCopied] = useState(false);
 
+  // Audio compatibility for mobile (unlocks on first interaction)
+  const unlockAudio = () => {
+    audio.play().then(() => {
+      audio.pause();
+      audio.currentTime = 0;
+    }).catch(() => { });
+  };
+
   // Refs for P2P to avoid re-renders or stale closures
   const peerRef = useRef<Peer | null>(null);
   const connectionsRef = useRef<DataConnection[]>([]);
@@ -36,6 +48,16 @@ const App: React.FC = () => {
       }
     });
   }, []);
+
+  // -- Global Audio Controller --
+  useEffect(() => {
+    if (gameState?.isEmergency) {
+      audio.play().catch(e => console.warn("Audio blocked by browser. Need interaction.", e));
+    } else {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+  }, [gameState?.isEmergency]);
 
   // -- P2P: Initialization --
   useEffect(() => {
@@ -100,6 +122,13 @@ const App: React.FC = () => {
         });
       });
 
+      // -- HOST: Listen for requests from Players --
+      conn.on('data', (data: any) => {
+        if (data.type === 'REQUEST_EMERGENCY') {
+          triggerEmergency();
+        }
+      });
+
       conn.on('close', () => {
         connectionsRef.current = connectionsRef.current.filter(c => c !== conn);
       });
@@ -129,11 +158,14 @@ const App: React.FC = () => {
 
       conn.on('open', () => {
         setConnectionStatus('connected');
-        // Initial handshake or wait for data
+        // Cache the connection to send messages later
+        connectionsRef.current = [conn];
       });
 
       conn.on('data', (data: any) => {
-        setGameState(data as GameState);
+        if (data.status) { // Simple check if it's GameState
+          setGameState(data as GameState);
+        }
       });
 
       conn.on('close', () => {
@@ -146,6 +178,14 @@ const App: React.FC = () => {
         alert("Não foi possível conectar. Verifique o código.");
         setView('home');
       });
+    });
+  };
+
+  // -- GUEST: Send message to Host --
+  const sendToHost = (msg: any) => {
+    if (isHost) return;
+    connectionsRef.current.forEach(conn => {
+      if (conn.open) conn.send(msg);
     });
   };
 
@@ -249,6 +289,15 @@ const App: React.FC = () => {
   };
 
   const clearEmergency = () => updateGame(prev => prev ? ({ ...prev, isEmergency: false }) : null);
+
+  const requestEmergency = () => {
+    if (isHost) {
+      triggerEmergency();
+    } else {
+      sendToHost({ type: 'REQUEST_EMERGENCY' });
+    }
+  };
+
   const endGame = () => updateGame(prev => prev ? ({ ...prev, status: GameStatus.ENDED, isEmergency: false }) : null);
 
   const shareMatch = () => {
@@ -316,11 +365,17 @@ const App: React.FC = () => {
             </div>
 
             <div className="w-full space-y-4">
-              <button onClick={createNewGame} className="w-full py-5 rounded-2xl bg-rose-600 text-white font-display font-black text-lg shadow-xl shadow-rose-900/40 active:scale-95 transition-all flex items-center justify-center gap-3">
+              <button
+                onClick={() => { unlockAudio(); createNewGame(); }}
+                className="w-full py-5 rounded-2xl bg-rose-600 text-white font-display font-black text-lg shadow-xl shadow-rose-900/40 active:scale-95 transition-all flex items-center justify-center gap-3"
+              >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 CRIAR SALA
               </button>
-              <button onClick={() => setView('join')} className="w-full py-5 rounded-2xl bg-stone-900 text-stone-300 font-display font-black text-lg border border-stone-800 active:scale-95 transition-all flex items-center justify-center gap-3">
+              <button
+                onClick={() => { unlockAudio(); setView('join'); }}
+                className="w-full py-5 rounded-2xl bg-stone-900 text-stone-300 font-display font-black text-lg border border-stone-800 active:scale-95 transition-all flex items-center justify-center gap-3"
+              >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
                 ENTRAR
               </button>
@@ -338,7 +393,9 @@ const App: React.FC = () => {
             gameStatus={gameState.status}
             isEmergency={gameState.isEmergency}
             emergencyMessage={gameState.emergencyMessage}
-            onClearEmergency={clearEmergency} // Only works if we passed it through PeerJS back to host? No, simple players can't clear.
+            onClearEmergency={clearEmergency}
+            onTriggerEmergency={requestEmergency}
+            onUnlockAudio={unlockAudio}
           />
         )}
 
@@ -354,6 +411,7 @@ const App: React.FC = () => {
             onReset={resetGame}
             onEmergency={triggerEmergency}
             onShare={shareMatch}
+            onUnlockAudio={unlockAudio}
           />
         )}
 
