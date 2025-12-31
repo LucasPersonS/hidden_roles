@@ -26,4 +26,5 @@ export interface GameState {
   startTime?: number;
   isEmergency: boolean;
   emergencyMessage?: string;
+  lastEmergencyTime?: number;
 }
