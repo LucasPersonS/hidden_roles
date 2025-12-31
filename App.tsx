@@ -283,9 +283,15 @@ const App: React.FC = () => {
     });
   };
 
-  const triggerEmergency = async () => {
-    const msg = await generateEmergencyMessage();
-    updateGame(prev => prev ? ({ ...prev, isEmergency: true, emergencyMessage: msg }) : null);
+  const triggerEmergency = () => {
+    // Trigger emergency IMMEDIATELY with static message
+    const emergencyMsg = "REUNIÃO DE EMERGÊNCIA! Todos para a sala principal!";
+    updateGame(prev => prev ? ({ ...prev, isEmergency: true, emergencyMessage: emergencyMsg }) : null);
+
+    // Auto-dismiss after 8 seconds
+    setTimeout(() => {
+      updateGame(prev => prev && prev.isEmergency ? ({ ...prev, isEmergency: false }) : prev);
+    }, 8000);
   };
 
   const clearEmergency = () => updateGame(prev => prev ? ({ ...prev, isEmergency: false }) : null);
