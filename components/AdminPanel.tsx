@@ -6,6 +6,7 @@ import { generateMissions } from '../services/geminiService';
 interface AdminPanelProps {
   players: Player[];
   status: GameStatus;
+  matchId: string;
   onAddPlayer: (name: string) => void;
   onRemovePlayer: (id: string) => void;
   onStartGame: (missions: Record<string, string>) => void;
@@ -18,6 +19,7 @@ interface AdminPanelProps {
 const AdminPanel: React.FC<AdminPanelProps> = ({
   players,
   status,
+  matchId,
   onAddPlayer,
   onRemovePlayer,
   onStartGame,
@@ -29,6 +31,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newName, setNewName] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // ... (handlers remain unchanged)
   const handleAdd = () => {
     if (newName.trim()) {
       onAddPlayer(newName.trim());
@@ -54,17 +57,27 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-center justify-center space-y-2 py-4">
+        <p className="text-[10px] text-stone-500 font-black uppercase tracking-[0.3em]">CÓDIGO DA SALA</p>
+        <div
+          onClick={onShare}
+          className="text-5xl font-display font-black text-white tracking-widest bg-stone-900 px-8 py-4 rounded-3xl border border-stone-800 shadow-2xl cursor-pointer hover:scale-105 active:scale-95 transition-all text-center select-all"
+        >
+          {matchId}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between border-b border-white/5 pb-2">
         <h2 className="text-lg font-display font-black text-rose-500 italic uppercase">Terminal Mestre</h2>
         <div className="flex gap-2">
-           <button 
-             onClick={onShare}
-             className="p-2 rounded-xl bg-stone-900 text-rose-500 border border-rose-500/20 active:scale-90 transition-all shadow-lg"
-           >
-             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-             </svg>
-           </button>
+          <button
+            onClick={onShare}
+            className="p-2 rounded-xl bg-stone-900 text-rose-500 border border-rose-500/20 active:scale-90 transition-all shadow-lg"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -104,8 +117,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               ))}
               {players.length === 0 && (
                 <div className="p-10 text-center space-y-2">
-                   <p className="text-stone-600 text-xs font-black uppercase tracking-[0.2em]">Sala de Espera Vazia</p>
-                   <p className="text-[10px] text-stone-700">Adicione jogadores para iniciar o protocolo.</p>
+                  <p className="text-stone-600 text-xs font-black uppercase tracking-[0.2em]">Sala de Espera Vazia</p>
+                  <p className="text-[10px] text-stone-700">Adicione jogadores para iniciar o protocolo.</p>
                 </div>
               )}
             </div>
@@ -114,11 +127,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           <button
             onClick={handleStart}
             disabled={players.length < 3 || loading}
-            className={`w-full py-5 rounded-2xl font-display font-black text-lg transition-all shadow-2xl relative overflow-hidden ${
-              players.length < 3 || loading
-                ? 'bg-stone-900 text-stone-700 cursor-not-allowed border border-stone-800'
-                : 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/30 active:scale-[0.98]'
-            }`}
+            className={`w-full py-5 rounded-2xl font-display font-black text-lg transition-all shadow-2xl relative overflow-hidden ${players.length < 3 || loading
+              ? 'bg-stone-900 text-stone-700 cursor-not-allowed border border-stone-800'
+              : 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/30 active:scale-[0.98]'
+              }`}
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -141,18 +153,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
           <div className="glass bg-stone-950/60 rounded-2xl p-5 space-y-4 border-stone-800 shadow-xl">
             <div className="flex items-center justify-between border-b border-white/5 pb-2">
-               <h3 className="text-[10px] font-black text-stone-500 uppercase tracking-widest">Dossiê de Campo</h3>
-               <button onClick={onShare} className="text-[9px] text-rose-500 font-black uppercase tracking-tighter border-b border-rose-500/30">Atualizar Link</button>
+              <h3 className="text-[10px] font-black text-stone-500 uppercase tracking-widest">Dossiê de Campo</h3>
+              <button onClick={onShare} className="text-[9px] text-rose-500 font-black uppercase tracking-tighter border-b border-rose-500/30">Atualizar Link</button>
             </div>
             <div className="space-y-2">
               {players.map(p => (
                 <div key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
                   <span className="font-bold text-stone-300 text-sm">{p.name}</span>
-                  <span className={`text-[9px] font-black px-2 py-1 rounded-md border uppercase tracking-tighter ${
-                    p.role === Role.IMPOSTOR ? 'bg-rose-500/20 text-rose-400 border-rose-500/40' : 
-                    p.role === Role.DETECTIVE ? 'bg-blue-500/20 text-blue-400 border-blue-500/40' : 
-                    'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                  }`}>
+                  <span className={`text-[9px] font-black px-2 py-1 rounded-md border uppercase tracking-tighter ${p.role === Role.IMPOSTOR ? 'bg-rose-500/20 text-rose-400 border-rose-500/40' :
+                    p.role === Role.DETECTIVE ? 'bg-blue-500/20 text-blue-400 border-blue-500/40' :
+                      'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                    }`}>
                     {p.role}
                   </span>
                 </div>
@@ -172,12 +183,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       {status === GameStatus.ENDED && (
         <div className="text-center space-y-8 py-12 animate-in zoom-in duration-500">
           <div className="relative inline-block">
-             <div className="w-24 h-24 bg-rose-600/10 rounded-full flex items-center justify-center border border-rose-500/30">
-                <svg className="w-12 h-12 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-             </div>
-             <div className="absolute inset-0 bg-rose-500/20 blur-3xl rounded-full"></div>
+            <div className="w-24 h-24 bg-rose-600/10 rounded-full flex items-center justify-center border border-rose-500/30">
+              <svg className="w-12 h-12 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div className="absolute inset-0 bg-rose-500/20 blur-3xl rounded-full"></div>
           </div>
           <div className="space-y-2">
             <h3 className="text-3xl font-display font-black text-rose-500 tracking-tighter italic">MISSÃO CONCLUÍDA</h3>
