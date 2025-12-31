@@ -1,0 +1,5 @@
+{
+  "name": "Hidden Roles: Mobile Social Deduction",
+  "description": "A sleek, mobile-first social deduction game manager. Assign roles like Impostor, Detective, and Innocent, generate AI-powered secret missions, and manage your matches with a dedicated admin panel.",
+  "requestFramePermissions": []
+}
