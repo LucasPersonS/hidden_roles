@@ -28,6 +28,7 @@ const App: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const [copied, setCopied] = useState(false);
   const [lastEmergencyTime, setLastEmergencyTime] = useState<number>(0);
+  const [cooldownMessage, setCooldownMessage] = useState<string | null>(null);
 
   // Audio compatibility for mobile (unlocks on first interaction)
   const unlockAudio = () => {
@@ -293,7 +294,8 @@ const App: React.FC = () => {
     // Check cooldown
     if (now - lastEmergencyTime < cooldownMs) {
       const remainingSeconds = Math.ceil((cooldownMs - (now - lastEmergencyTime)) / 1000);
-      alert(`Aguarde ${remainingSeconds}s antes de disparar outra emergência.`);
+      setCooldownMessage(`Aguarde ${remainingSeconds}s antes de disparar outra emergência.`);
+      setTimeout(() => setCooldownMessage(null), 3000);
       return;
     }
 
@@ -322,7 +324,8 @@ const App: React.FC = () => {
     // Check cooldown on client side too
     if (now - lastEmergencyTime < cooldownMs) {
       const remainingSeconds = Math.ceil((cooldownMs - (now - lastEmergencyTime)) / 1000);
-      alert(`Aguarde ${remainingSeconds}s antes de disparar outra emergência.`);
+      setCooldownMessage(`Aguarde ${remainingSeconds}s antes de disparar outra emergência.`);
+      setTimeout(() => setCooldownMessage(null), 3000);
       return;
     }
 
@@ -382,6 +385,12 @@ const App: React.FC = () => {
       {copied && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] bg-rose-600 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-2xl animate-in slide-in-from-top-4">
           Link Copiado!
+        </div>
+      )}
+
+      {cooldownMessage && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] bg-yellow-600 text-white text-[11px] font-black uppercase tracking-wide px-6 py-3 rounded-2xl shadow-2xl animate-in slide-in-from-top-4 border-2 border-yellow-400">
+          ⏱️ {cooldownMessage}
         </div>
       )}
 
