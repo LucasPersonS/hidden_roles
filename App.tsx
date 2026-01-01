@@ -29,6 +29,11 @@ const App: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [cooldownMessage, setCooldownMessage] = useState<string | null>(null);
 
+  // Role configuration
+  const [numImpostors, setNumImpostors] = useState(1);
+  const [numDetectives, setNumDetectives] = useState(1);
+  const [manualRoleAssignments, setManualRoleAssignments] = useState<Record<string, Role>>({});
+
   // Audio compatibility for mobile (unlocks on first interaction)
   const unlockAudio = () => {
     audio.play().then(() => {
@@ -252,34 +257,84 @@ const App: React.FC = () => {
   };
 
   const removePlayer = (id: string) => {
+    // Also remove any manual role assignment for this player
+    setManualRoleAssignments(prev => {
+      const updated = { ...prev };
+      delete updated[id];
+      return updated;
+    });
     updateGame(prev => prev ? ({
       ...prev,
       players: prev.players.filter(p => p.id !== id)
     }) : null);
   };
 
+  const setPlayerRole = (playerId: string, role: Role | null) => {
+    setManualRoleAssignments(prev => {
+      if (role === null) {
+        const updated = { ...prev };
+        delete updated[playerId];
+        return updated;
+      }
+      return { ...prev, [playerId]: role };
+    });
+  };
+
   const startGame = (missions: Record<string, string>) => {
     updateGame(prev => {
       if (!prev) return null;
       const playersCount = prev.players.length;
-      const numImpostors = playersCount >= 9 ? 3 : playersCount >= 6 ? 2 : 1;
-      const numDetectives = playersCount >= 9 ? 2 : 1;
 
-      const roles: Role[] = [];
-      for (let i = 0; i < numImpostors; i++) roles.push(Role.IMPOSTOR);
-      for (let i = 0; i < numDetectives; i++) roles.push(Role.DETECTIVE);
-      while (roles.length < playersCount) roles.push(Role.INNOCENT);
+      // Use manual assignments if provided, otherwise auto-assign
+      const assignedPlayers = prev.players.map(p => {
+        // Check if this player has a manual role assignment
+        if (manualRoleAssignments[p.id]) {
+          return {
+            ...p,
+            role: manualRoleAssignments[p.id],
+            mission: missions[p.name] || "Sua missão é secreta."
+          };
+        }
+        return p;
+      });
 
-      const shuffledRoles = roles.sort(() => Math.random() - 0.5);
-      const shuffledPlayers = [...prev.players].sort(() => Math.random() - 0.5);
+      // Count how many roles are already manually assigned
+      const manuallyAssigned = Object.values(manualRoleAssignments);
+      const assignedImpostors = manuallyAssigned.filter(r => r === Role.IMPOSTOR).length;
+      const assignedDetectives = manuallyAssigned.filter(r => r === Role.DETECTIVE).length;
+
+      // Calculate remaining roles needed
+      const remainingImpostors = Math.max(0, numImpostors - assignedImpostors);
+      const remainingDetectives = Math.max(0, numDetectives - assignedDetectives);
+
+      // Build remaining roles array
+      const remainingRoles: Role[] = [];
+      for (let i = 0; i < remainingImpostors; i++) remainingRoles.push(Role.IMPOSTOR);
+      for (let i = 0; i < remainingDetectives; i++) remainingRoles.push(Role.DETECTIVE);
+
+      // Fill the rest with innocents
+      const unassignedCount = assignedPlayers.filter(p => !manualRoleAssignments[p.id]).length;
+      while (remainingRoles.length < unassignedCount) remainingRoles.push(Role.INNOCENT);
+
+      // Shuffle remaining roles
+      const shuffledRoles = remainingRoles.sort(() => Math.random() - 0.5);
+
+      // Assign remaining roles to unassigned players
+      let roleIndex = 0;
+      const finalPlayers = assignedPlayers.map(p => {
+        if (!manualRoleAssignments[p.id]) {
+          return {
+            ...p,
+            role: shuffledRoles[roleIndex++],
+            mission: missions[p.name] || "Sua missão é secreta."
+          };
+        }
+        return p;
+      });
 
       return {
         ...prev,
-        players: shuffledPlayers.map((p, idx) => ({
-          ...p,
-          role: shuffledRoles[idx],
-          mission: missions[p.name] || "Sua missão é secreta."
-        })),
+        players: finalPlayers,
         status: GameStatus.ACTIVE,
         startTime: Date.now(),
         isEmergency: false
@@ -457,6 +512,12 @@ const App: React.FC = () => {
             onEmergency={triggerEmergency}
             onShare={shareMatch}
             onUnlockAudio={unlockAudio}
+            numImpostors={numImpostors}
+            numDetectives={numDetectives}
+            manualRoleAssignments={manualRoleAssignments}
+            onSetNumImpostors={setNumImpostors}
+            onSetNumDetectives={setNumDetectives}
+            onSetPlayerRole={setPlayerRole}
           />
         )}
 

@@ -15,6 +15,12 @@ interface AdminPanelProps {
   onEmergency: () => void;
   onShare: () => void;
   onUnlockAudio?: () => void;
+  numImpostors: number;
+  numDetectives: number;
+  manualRoleAssignments: Record<string, Role>;
+  onSetNumImpostors: (n: number) => void;
+  onSetNumDetectives: (n: number) => void;
+  onSetPlayerRole: (playerId: string, role: Role | null) => void;
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({
@@ -28,7 +34,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   onReset,
   onEmergency,
   onShare,
-  onUnlockAudio
+  onUnlockAudio,
+  numImpostors,
+  numDetectives,
+  manualRoleAssignments,
+  onSetNumImpostors,
+  onSetNumDetectives,
+  onSetPlayerRole
 }) => {
   const [newName, setNewName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -103,19 +115,61 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             </button>
           </div>
 
+          {/* Role Configuration */}
+          <div className="glass bg-stone-950/60 rounded-2xl p-4 border-stone-800">
+            <p className="text-[10px] text-stone-500 font-black uppercase tracking-[0.3em] mb-3">Configuração de Papéis</p>
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="text-[9px] text-stone-600 font-black uppercase block mb-1">Impostores</label>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => onSetNumImpostors(Math.max(1, numImpostors - 1))} className="bg-stone-800 hover:bg-stone-700 text-white font-black px-3 py-2 rounded-lg">-</button>
+                  <span className="text-white font-black text-lg w-8 text-center">{numImpostors}</span>
+                  <button onClick={() => onSetNumImpostors(Math.min(players.length - 1, numImpostors + 1))} className="bg-stone-800 hover:bg-stone-700 text-white font-black px-3 py-2 rounded-lg">+</button>
+                </div>
+              </div>
+              <div className="flex-1">
+                <label className="text-[9px] text-stone-600 font-black uppercase block mb-1">Detetives</label>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => onSetNumDetectives(Math.max(1, numDetectives - 1))} className="bg-stone-800 hover:bg-stone-700 text-white font-black px-3 py-2 rounded-lg">-</button>
+                  <span className="text-white font-black text-lg w-8 text-center">{numDetectives}</span>
+                  <button onClick={() => onSetNumDetectives(Math.min(players.length - 1, numDetectives + 1))} className="bg-stone-800 hover:bg-stone-700 text-white font-black px-3 py-2 rounded-lg">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="glass bg-stone-950/40 rounded-2xl overflow-hidden border-stone-800 shadow-inner">
             <div className="max-h-56 overflow-y-auto">
               {players.map((p) => (
                 <div key={p.id} className="flex items-center justify-between p-4 border-b border-white/5 last:border-0 hover:bg-rose-500/5 transition-colors">
-                  <span className="font-bold text-stone-300 tracking-tight">{p.name}</span>
-                  <button
-                    onClick={() => onRemovePlayer(p.id)}
-                    className="p-1.5 text-stone-600 hover:text-rose-500 transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
+                  <div className="flex-1">
+                    <span className="font-bold text-stone-300 tracking-tight">{p.name}</span>
+                    {manualRoleAssignments[p.id] && (
+                      <span className={`ml-2 text-[8px] font-black px-2 py-0.5 rounded-md ${manualRoleAssignments[p.id] === Role.IMPOSTOR ? 'bg-rose-500/20 text-rose-400' :
+                          manualRoleAssignments[p.id] === Role.DETECTIVE ? 'bg-blue-500/20 text-blue-400' :
+                            'bg-emerald-500/20 text-emerald-400'
+                        }`}>
+                        {manualRoleAssignments[p.id]}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => onSetPlayerRole(p.id, Role.IMPOSTOR)} className={`p-1.5 text-[8px] font-black rounded ${manualRoleAssignments[p.id] === Role.IMPOSTOR ? 'bg-rose-600 text-white' : 'bg-stone-800 text-stone-500 hover:bg-stone-700'
+                      }`} title="Impostor">IMP</button>
+                    <button onClick={() => onSetPlayerRole(p.id, Role.DETECTIVE)} className={`p-1.5 text-[8px] font-black rounded ${manualRoleAssignments[p.id] === Role.DETECTIVE ? 'bg-blue-600 text-white' : 'bg-stone-800 text-stone-500 hover:bg-stone-700'
+                      }`} title="Detetive">DET</button>
+                    <button onClick={() => onSetPlayerRole(p.id, Role.INNOCENT)} className={`p-1.5 text-[8px] font-black rounded ${manualRoleAssignments[p.id] === Role.INNOCENT ? 'bg-emerald-600 text-white' : 'bg-stone-800 text-stone-500 hover:bg-stone-700'
+                      }`} title="Inocente">INO</button>
+                    <button onClick={() => onSetPlayerRole(p.id, null)} className="p-1.5 text-[8px] font-black rounded bg-stone-800 text-stone-500 hover:bg-stone-700" title="Limpar">✕</button>
+                    <button
+                      onClick={() => onRemovePlayer(p.id)}
+                      className="p-1.5 text-stone-600 hover:text-rose-500 transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               ))}
               {players.length === 0 && (
